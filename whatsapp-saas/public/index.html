@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LetsMaya — WhatsApp AI Agents for Any Business</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10211f; --paper:#f4efe6; --teal:#0f4f47; --teal-2:#13635a;
+    --amber:#e8923a; --amber-dk:#c8741f; --line:#d8cfbf; --muted:#6b7d78;
+    --card:#fffdf8; --good:#1f7a5c; --bad:#b5462f;
+    --shadow:0 1px 2px rgba(16,33,31,.06),0 8px 28px rgba(16,33,31,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Spline Sans',sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:'Fraunces',serif;line-height:1.05;letter-spacing:-.01em}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  .btn{font:inherit;font-weight:600;border:none;border-radius:10px;padding:13px 22px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px}
+  .btn-amber{background:var(--amber);color:#251300}
+  .btn-amber:hover{background:var(--amber-dk);transform:translateY(-1px)}
+  .btn-teal{background:var(--teal);color:#eafaf4}
+  .btn-teal:hover{background:var(--teal-2)}
+  .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--teal)}
+  .btn-sm{padding:8px 14px;font-size:14px;border-radius:8px}
+  input,select,textarea{font:inherit;width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
+  input:focus,select,textarea:focus{outline:none;border-color:var(--teal)}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px}
+  .field{margin-bottom:15px}
+  .hide{display:none!important}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(244,239,230,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .logo{font-family:'Fraunces';font-weight:900;font-size:22px;display:flex;align-items:center;gap:9px}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(232,146,58,.22)}
+
+  /* HERO */
+  .hero{padding:84px 0 70px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:
+    radial-gradient(560px 380px at 84% -8%,rgba(15,79,71,.10),transparent),
+    radial-gradient(420px 320px at 6% 108%,rgba(232,146,58,.12),transparent)}
+  .hero .wrap{position:relative}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:18px}
+  .hero h1{font-size:clamp(40px,6.4vw,74px);font-weight:900;max-width:14ch}
+  .hero h1 em{font-style:italic;color:var(--amber-dk)}
+  .hero p.sub{font-size:20px;color:var(--muted);max-width:54ch;margin:22px 0 32px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .verticals{display:flex;flex-wrap:wrap;gap:9px;margin-top:38px}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:14px;font-weight:500;box-shadow:var(--shadow)}
+  .chip b{color:var(--teal)}
+
+  /* SECTIONS */
+  section.band{padding:74px 0;border-top:1px solid var(--line)}
+  .band h2{font-size:clamp(28px,4vw,42px);font-weight:600;max-width:18ch;margin-bottom:14px}
+  .lead{color:var(--muted);font-size:18px;max-width:60ch}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:42px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;box-shadow:var(--shadow)}
+  .card .n{font-family:'Fraunces';font-weight:900;font-size:30px;color:var(--amber-dk)}
+  .card h3{font-size:20px;font-weight:600;margin:10px 0 8px}
+  .card p{color:var(--muted);font-size:15px}
+
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:42px;counter-reset:s}
+  .step{position:relative;padding-top:14px}
+  .step:before{counter-increment:s;content:counter(s);font-family:'Fraunces';font-weight:900;font-size:15px;color:#fff;background:var(--teal);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .step h3{font-size:17px;font-weight:600;margin-bottom:6px}
+  .step p{color:var(--muted);font-size:14px}
+
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:42px}
+  .price{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:var(--shadow)}
+  .price.feat{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .price.feat .amt,.price.feat h3{color:#fff}
+  .price h3{font-size:16px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;font-family:'Spline Sans'}
+  .price .amt{font-family:'Fraunces';font-weight:900;font-size:42px;margin:12px 0}
+  .price .amt span{font-size:15px;font-weight:400;color:var(--muted)}
+  .price.feat .amt span{color:#9fc4ba}
+  .price ul{list-style:none;margin:18px 0 24px}
+  .price li{padding:7px 0 7px 26px;position:relative;font-size:15px}
+  .price li:before{content:"✓";position:absolute;left:0;color:var(--amber);font-weight:700}
+
+  footer{background:var(--ink);color:#b8c9c4;padding:40px 0;font-size:14px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+
+  /* AUTH MODAL */
+  .modal{position:fixed;inset:0;background:rgba(16,33,31,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal .box{background:var(--paper);border-radius:20px;padding:34px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+  .modal h2{font-size:26px;margin-bottom:6px}
+  .modal .sw{font-size:14px;color:var(--muted);margin-top:14px;text-align:center}
+  .modal .sw a{color:var(--teal);font-weight:600;cursor:pointer}
+  .err{background:#fdeee9;color:var(--bad);border:1px solid #f3cabd;padding:10px 12px;border-radius:9px;font-size:14px;margin-bottom:12px}
+
+  /* DASHBOARD */
+  #dash{min-height:100vh}
+  .dwrap{max-width:1180px;margin:0 auto;padding:26px 24px}
+  .dhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+  .stat .v{font-family:'Fraunces';font-weight:900;font-size:34px;color:var(--teal)}
+  .stat .k{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .layout{display:grid;grid-template-columns:260px 1fr;gap:22px}
+  .side{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);height:fit-content}
+  .botitem{padding:11px 12px;border-radius:9px;cursor:pointer;font-weight:500;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  .botitem:hover{background:var(--paper)}
+  .botitem.active{background:var(--teal);color:#eafaf4}
+  .botitem small{opacity:.7;font-size:12px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow)}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tab{padding:10px 16px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--teal);border-color:var(--amber)}
+  .lead-row,.conv-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);gap:10px}
+  .badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;background:rgba(232,146,58,.16);color:var(--amber-dk)}
+  .badge.order{background:rgba(31,122,92,.15);color:var(--good)}
+  .badge.complaint{background:#fbe6df;color:var(--bad)}
+  .chat{background:var(--paper);border-radius:12px;padding:16px;max-height:340px;overflow-y:auto;margin-bottom:14px}
+  .bubble{max-width:78%;padding:9px 13px;border-radius:13px;margin-bottom:9px;font-size:14px;white-space:pre-wrap}
+  .bubble.user{background:#fff;border:1px solid var(--line);margin-right:auto;border-bottom-left-radius:4px}
+  .bubble.assistant{background:var(--teal);color:#eafaf4;margin-left:auto;border-bottom-right-radius:4px}
+  .testbar{display:flex;gap:8px}
+  .testbar input{flex:1}
+  .muted{color:var(--muted);font-size:14px}
+  @media(max-width:860px){.grid3,.steps,.pricing{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ════════════ PUBLIC SITE ════════════ -->
+<div id="site">
+  <nav><div class="wrap">
+    <div class="logo"><span class="dot"></span>LetsMaya</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">Log in</button>
+      <button class="btn btn-amber btn-sm" onclick="openAuth('signup')">Start free</button>
+    </div>
+  </div></nav>
+
+  <header class="hero"><div class="wrap">
+    <div class="eyebrow">WhatsApp AI agents · built for your business</div>
+    <h1>An AI agent that <em>answers, books & sells</em> on WhatsApp — 24/7.</h1>
+    <p class="sub">Set up an AI assistant for your restaurant, clinic, store, real-estate desk or service business in minutes. It replies in your customer's language, captures every order and lead, and alerts you instantly.</p>
+    <div class="hero-cta">
+      <button class="btn btn-amber" onclick="openAuth('signup')">Build my agent — free</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+    </div>
+    <div class="verticals" id="vchips"></div>
+  </div></header>
+
+  <section class="band"><div class="wrap">
+    <h2>One platform. Every kind of business.</h2>
+    <p class="lead">Pick your industry and get a working agent pre-trained for it — no prompt engineering, no developers.</p>
+    <div class="grid3">
+      <div class="card"><div class="n">01</div><h3>Captures every lead</h3><p>Orders, appointments, callbacks and complaints are detected automatically and logged to your dashboard.</p></div>
+      <div class="card"><div class="n">02</div><h3>Speaks your customer's language</h3><p>English, Urdu, Roman Urdu, Arabic — it mirrors whatever the customer types, instantly.</p></div>
+      <div class="card"><div class="n">03</div><h3>Alerts you in real time</h3><p>The moment a real order or booking comes in, the owner gets a WhatsApp ping. Nothing slips through.</p></div>
+    </div>
+  </div></section>
+
+  <section class="band" id="how"><div class="wrap">
+    <h2>Live in four steps.</h2>
+    <p class="lead">Most businesses are taking real conversations the same day.</p>
+    <div class="steps">
+      <div class="step"><h3>Create account</h3><p>Sign up free, no card needed.</p></div>
+      <div class="step"><h3>Pick industry</h3><p>Restaurant, clinic, retail, real estate, services — we pre-build the agent.</p></div>
+      <div class="step"><h3>Test it instantly</h3><p>Chat with your agent right in the dashboard before going live.</p></div>
+      <div class="step"><h3>Connect WhatsApp</h3><p>Paste your Meta number details and you're live.</p></div>
+    </div>
+  </div></section>
+
+  <section class="band"><div class="wrap">
+    <h2>Pricing that fits a small business.</h2>
+    <p class="lead">Start free. Upgrade when it's making you money.</p>
+    <div class="pricing">
+      <div class="price"><h3>Starter</h3><div class="amt">Free</div><ul><li>1 agent</li><li>Test console</li><li>50 conversations/mo</li><li>Lead capture</li></ul><button class="btn btn-ghost" style="width:100%" onclick="openAuth('signup')">Get started</button></div>
+      <div class="price feat"><h3>Growth</h3><div class="amt">$49<span>/mo</span></div><ul><li>3 agents</li><li>Unlimited conversations</li><li>WhatsApp live connect</li><li>Manager alerts</li><li>Lead export</li></ul><button class="btn btn-amber" style="width:100%" onclick="openAuth('signup')">Start trial</button></div>
+      <div class="price"><h3>Agency</h3><div class="amt">$199<span>/mo</span></div><ul><li>Unlimited agents</li><li>White-label</li><li>Resell to clients</li><li>Priority support</li></ul><button class="btn btn-ghost" style="width:100%" onclick="openAuth('signup')">Contact us</button></div>
+    </div>
+  </div></section>
+
+  <footer><div class="wrap">
+    <div class="logo" style="color:#fff">LetsMaya</div>
+    <div>WhatsApp AI agents for restaurants · clinics · retail · real estate · services</div>
+    <div>© 2026 · Built on Meta Cloud API + Claude</div>
+  </div></footer>
+</div>
+
+<!-- ════════════ AUTH MODAL ════════════ -->
+<div id="authModal" class="modal hide"><div class="box">
+  <h2 id="authTitle">Welcome back</h2>
+  <p class="muted" id="authSub">Log in to your dashboard</p>
+  <div id="authErr" class="err hide"></div>
+  <div style="margin-top:18px">
+    <div class="field" id="nameField"><label>Your name</label><input id="auName" placeholder="Aisha Khan"></div>
+    <div class="field"><label>Email</label><input id="auEmail" type="email" placeholder="you@business.com"></div>
+    <div class="field"><label>Password</label><input id="auPass" type="password" placeholder="••••••••"></div>
+    <button class="btn btn-teal" style="width:100%" id="authBtn" onclick="submitAuth()">Continue</button>
+  </div>
+  <div class="sw" id="authSwitch"></div>
+</div></div>
+
+<!-- ════════════ DASHBOARD ════════════ -->
+<div id="dash" class="hide"><div class="dwrap">
+  <div class="dhead">
+    <div class="logo"><span class="dot"></span>LetsMaya <span class="muted" style="font-size:14px;font-weight:400">· dashboard</span></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="muted" id="who"></span>
+      <button class="btn btn-ghost btn-sm" onclick="newBot()">+ New agent</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="layout">
+    <div class="side"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Your agents</div><div id="botList"></div></div>
+    <div class="panel" id="panel"><p class="muted">Loading…</p></div>
+  </div>
+</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let MODE='login', STATE={ tenant:null, bots:[], bot:null, tab:'test' };
+
+// ── industry chips on landing ──
+fetch('/api/industries').then(r=>r.json()).then(list=>{
+  $('#vchips').innerHTML = list.map(i=>`<span class="chip">${i.label}</span>`).join('');
+  window.INDUSTRIES = list;
+});
+
+// ── auth modal ──
+function openAuth(m){ MODE=m; $('#authModal').classList.remove('hide'); $('#authErr').classList.add('hide');
+  $('#nameField').classList.toggle('hide', m==='login');
+  $('#authTitle').textContent = m==='login'?'Welcome back':'Create your account';
+  $('#authSub').textContent = m==='login'?'Log in to your dashboard':'Free to start — no card required';
+  $('#authBtn').textContent = m==='login'?'Log in':'Create account';
+  $('#authSwitch').innerHTML = m==='login'
+    ? `New here? <a onclick="openAuth('signup')">Create an account</a>`
+    : `Already have one? <a onclick="openAuth('login')">Log in</a>`;
+}
+function closeAuth(){ $('#authModal').classList.add('hide'); }
+$('#authModal').addEventListener('click',e=>{ if(e.target.id==='authModal') closeAuth(); });
+
+async function submitAuth(){
+  const body = { email:$('#auEmail').value.trim(), password:$('#auPass').value };
+  if(MODE==='signup') body.name = $('#auName').value.trim();
+  const r = await fetch('/api/'+(MODE==='signup'?'signup':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d = await r.json();
+  if(!r.ok){ $('#authErr').textContent=d.error; $('#authErr').classList.remove('hide'); return; }
+  closeAuth(); enterDash();
+}
+
+async function logout(){ await fetch('/api/logout',{method:'POST'}); location.reload(); }
+
+// ── dashboard bootstrap ──
+async function enterDash(){
+  const r = await fetch('/api/me'); if(!r.ok) return;
+  STATE.tenant = await r.json();
+  $('#site').classList.add('hide'); $('#authModal').classList.add('hide'); $('#dash').classList.remove('hide');
+  $('#who').textContent = STATE.tenant.name;
+  await loadBots();
+}
+
+async function loadBots(){
+  STATE.bots = await (await fetch('/api/bots')).json();
+  if(!STATE.bots.length){ renderEmpty(); return; }
+  if(!STATE.bot || !STATE.bots.find(b=>b.id===STATE.bot.id)) STATE.bot = STATE.bots[0];
+  renderBotList(); selectBot(STATE.bot.id);
+}
+
+function renderBotList(){
+  $('#botList').innerHTML = STATE.bots.map(b=>`
+    <div class="botitem ${STATE.bot&&b.id===STATE.bot.id?'active':''}" onclick="selectBot('${b.id}')">
+      <span>${b.business_name}</span><small>${b.industry}</small></div>`).join('');
+}
+
+function renderEmpty(){
+  $('#stats').innerHTML=''; $('#botList').innerHTML='<p class="muted" style="font-size:13px">No agents yet</p>';
+  $('#panel').innerHTML = `<h2 style="font-family:Fraunces;font-size:26px;margin-bottom:8px">Create your first agent</h2>
+    <p class="muted" style="margin-bottom:18px">Pick an industry — we'll build the agent for you.</p>`+botForm();
+}
+
+function botForm(b){
+  const opts = (window.INDUSTRIES||[]).map(i=>`<option value="${i.key}" ${b&&b.industry===i.key?'selected':''}>${i.label}</option>`).join('');
+  return `<div style="max-width:520px">
+    <div class="field"><label>Business name</label><input id="f_name" value="${b?b.business_name:''}" placeholder="Matka Chai Cafe"></div>
+    <div class="field"><label>Industry</label><select id="f_ind">${opts}</select></div>
+    <div class="field"><label>Manager WhatsApp (for alerts)</label><input id="f_mgr" value="${b?b.manager_phone:''}" placeholder="923001234567"></div>
+    <button class="btn btn-amber" onclick="${b?`saveBot('${b.id}')`:'createBot()'}">${b?'Save changes':'Create agent'}</button>
+  </div>`;
+}
+
+async function createBot(){
+  const body={ business_name:$('#f_name').value.trim(), industry:$('#f_ind').value, manager_phone:$('#f_mgr').value.trim() };
+  if(!body.business_name) return alert('Enter a business name');
+  const b = await (await fetch('/api/bots',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  STATE.bot=b; await loadBots();
+}
+function newBot(){ STATE.bot=null; renderBotList(); $('#panel').innerHTML=`<h2 style="font-family:Fraunces;font-size:24px;margin-bottom:14px">New agent</h2>`+botForm(); }
+
+async function selectBot(id){
+  STATE.bot = await (await fetch('/api/bots/'+id)).json();
+  renderBotList(); await loadStats(); renderPanel();
+}
+
+async function loadStats(){
+  const s = await (await fetch(`/api/bots/${STATE.bot.id}/stats`)).json();
+  $('#stats').innerHTML = `
+    <div class="stat"><div class="v">${s.conversations}</div><div class="k">Conversations</div></div>
+    <div class="stat"><div class="v">${s.today}</div><div class="k">Leads today</div></div>
+    <div class="stat"><div class="v">${s.total}</div><div class="k">Total leads</div></div>`;
+}
+
+function renderPanel(){
+  const t = STATE.tab;
+  $('#panel').innerHTML = `
+    <div class="tabs">
+      ${['test','leads','conversations','settings'].map(x=>`<div class="tab ${t===x?'active':''}" onclick="setTab('${x}')">${x[0].toUpperCase()+x.slice(1)}</div>`).join('')}
+    </div><div id="tabBody"></div>`;
+  ({test:tabTest,leads:tabLeads,conversations:tabConvs,settings:tabSettings}[t])();
+}
+function setTab(t){ STATE.tab=t; renderPanel(); }
+
+// ── TAB: test console ──
+function tabTest(){
+  $('#tabBody').innerHTML = `
+    <p class="muted" style="margin-bottom:12px">Chat with your agent exactly as a customer would. Replies are real (or demo if no AI key is set).</p>
+    <div class="chat" id="chat"></div>
+    <div class="testbar"><input id="testIn" placeholder="Type a customer message…" onkeydown="if(event.key==='Enter')sendTest()"><button class="btn btn-teal" onclick="sendTest()">Send</button></div>`;
+  window._chat=[];
+}
+async function sendTest(){
+  const v=$('#testIn').value.trim(); if(!v) return; $('#testIn').value='';
+  window._chat.push({role:'user',content:v}); paintChat();
+  const d = await (await fetch(`/api/bots/${STATE.bot.id}/test`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer:'demo-customer',text:v})})).json();
+  window._chat.push({role:'assistant',content:d.reply}); paintChat();
+  if(d.lead){ loadStats(); }
+}
+function paintChat(){
+  const c=$('#chat'); c.innerHTML = window._chat.map(m=>`<div class="bubble ${m.role}">${esc(m.content)}</div>`).join('');
+  c.scrollTop=c.scrollHeight;
+}
+
+// ── TAB: leads ──
+async function tabLeads(){
+  const leads = await (await fetch(`/api/bots/${STATE.bot.id}/leads`)).json();
+  $('#tabBody').innerHTML = leads.length ? leads.map(l=>`
+    <div class="lead-row">
+      <div><span class="badge ${l.type}">${l.type}</span> <b>${l.customer}</b><div class="muted">${esc(l.detail||'')}</div></div>
+      <div style="text-align:right"><div class="muted" style="font-size:12px">${new Date(l.created_at).toLocaleString()}</div>
+      ${l.status==='new'?`<button class="btn btn-ghost btn-sm" onclick="handle('${l.id}')">Mark handled</button>`:'<span class="muted">✓ handled</span>'}</div>
+    </div>`).join('') : '<p class="muted">No leads yet — try the test console.</p>';
+}
+async function handle(id){ await fetch('/api/leads/'+id+'/handled',{method:'POST'}); tabLeads(); }
+
+// ── TAB: conversations ──
+async function tabConvs(){
+  const cs = await (await fetch(`/api/bots/${STATE.bot.id}/conversations`)).json();
+  $('#tabBody').innerHTML = cs.length ? cs.map(c=>`
+    <div class="conv-row" onclick="openConv('${c.id}')" style="cursor:pointer">
+      <div><b>${c.customer}</b><div class="muted">${esc(c.last_msg||'')}</div></div>
+      <div class="muted" style="font-size:12px">${new Date(c.updated_at).toLocaleString()}</div>
+    </div>`).join('') : '<p class="muted">No conversations yet.</p>';
+}
+async function openConv(id){
+  const d = await (await fetch(`/api/bots/${STATE.bot.id}/conversations/${id}`)).json();
+  $('#tabBody').innerHTML = `<button class="btn btn-ghost btn-sm" onclick="tabConvs()">← back</button>
+    <div class="chat" style="margin-top:14px;max-height:480px">${d.messages.map(m=>`<div class="bubble ${m.role}">${esc(m.content)}</div>`).join('')}</div>`;
+}
+
+// ── TAB: settings ──
+function tabSettings(){
+  const b=STATE.bot;
+  $('#tabBody').innerHTML = `
+    ${botForm(b)}
+    <hr style="border:none;border-top:1px solid var(--line);margin:24px 0">
+    <h3 style="font-family:Fraunces;font-size:20px;margin-bottom:6px">Agent instructions</h3>
+    <p class="muted" style="margin-bottom:10px">Fine-tune what your agent knows and how it behaves.</p>
+    <textarea id="f_prompt" rows="10" style="font-size:13px;font-family:monospace">${esc(b.system_prompt)}</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-teal btn-sm" onclick="savePrompt()">Save instructions</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetPrompt()">Reset to ${b.industry} template</button>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:24px 0">
+    <h3 style="font-family:Fraunces;font-size:20px;margin-bottom:6px">Connect WhatsApp (Meta Cloud API)</h3>
+    <p class="muted" style="margin-bottom:12px">Paste these from your Meta Developer app to go live. Leave blank to stay in test mode.</p>
+    <div class="field"><label>Phone Number ID</label><input id="f_pid" value="${b.meta_phone_id||''}"></div>
+    <div class="field"><label>Access Token</label><input id="f_tok" value="${b.meta_token||''}" type="password"></div>
+    <div class="field"><label>Webhook Verify Token (you choose this)</label><input id="f_vt" value="${b.meta_verify_token||''}" placeholder="my-secret-123"></div>
+    <button class="btn btn-amber btn-sm" onclick="saveMeta()">Save connection</button>
+    <p class="muted" style="margin-top:12px;font-size:13px">Webhook URL: <code>${location.origin}/webhook</code></p>`;
+}
+async function saveBot(id){
+  await fetch('/api/bots/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({business_name:$('#f_name').value.trim(),industry:$('#f_ind').value,manager_phone:$('#f_mgr').value.trim()})});
+  await selectBot(id);
+}
+async function savePrompt(){ await put({system_prompt:$('#f_prompt').value}); alert('Saved'); }
+async function resetPrompt(){ await fetch(`/api/bots/${STATE.bot.id}/reset-prompt`,{method:'POST'}); await selectBot(STATE.bot.id); }
+async function saveMeta(){ await put({meta_phone_id:$('#f_pid').value.trim(),meta_token:$('#f_tok').value.trim(),meta_verify_token:$('#f_vt').value.trim()}); alert('Connection saved'); }
+async function put(fields){ STATE.bot = await (await fetch('/api/bots/'+STATE.bot.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)})).json(); }
+
+function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// auto-enter dashboard if already logged in
+fetch('/api/me').then(r=>{ if(r.ok) enterDash(); });
+</script>
+</body>
+</html>
