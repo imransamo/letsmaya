@@ -49,6 +49,27 @@ function ownBot(req, res, next) {
 // ─── Public legal/compliance pages required by Meta ──────────────────────────
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://letsmaya.com";
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "support@letsmaya.com";
+const META_API_VERSION = process.env.META_API_VERSION || "v21.0";
+const META_APP_ID = process.env.META_APP_ID || "1540959850756893";
+const META_CONFIG_ID = process.env.META_CONFIG_ID || "2301673067305775";
+const META_APP_SECRET = process.env.META_APP_SECRET || "";
+const DEFAULT_VERIFY_TOKEN = process.env.GLOBAL_VERIFY_TOKEN || "letsmaya_verify_123";
+
+async function graphFetch(pathname, { method = "GET", accessToken, body } = {}) {
+  const url = new URL(`https://graph.facebook.com/${META_API_VERSION}${pathname}`);
+  if (accessToken) url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const msg = data?.error?.message || `Graph API request failed: ${response.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
 
 function legalPage(title, body) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | LetsMaya</title><style>body{font-family:Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 20px;line-height:1.65;color:#10211f}h1,h2{line-height:1.2}a{color:#0f4f47}</style></head><body><p><a href="/">← Back to LetsMaya</a></p>${body}</body></html>`;
@@ -102,6 +123,13 @@ app.post("/data-deletion", (req, res) => {
   const confirmation = `delete-${Date.now().toString(36)}`;
   console.log("Meta data deletion request received", { hasSignedRequest: !!req.body?.signed_request, confirmation });
   res.json({ url: `${PUBLIC_BASE_URL}/data-deletion?code=${confirmation}`, confirmation_code: confirmation });
+});
+
+app.get("/auth/facebook/deauthorize", (_req, res) => {
+  res.type("html").send(legalPage("Facebook Deauthorization", `
+    <h1>Facebook Deauthorization</h1>
+    <p>This endpoint is active. If you disconnect LetsMaya from Meta, related access may be removed and you can request deletion at <a href="/data-deletion">/data-deletion</a>.</p>
+  `));
 });
 
 app.post("/auth/facebook/deauthorize", (req, res) => {
@@ -184,6 +212,86 @@ app.get("/api/bots/:botId/conversations/:convId", auth, ownBot, (req, res) => {
 });
 app.get("/api/bots/:botId/leads", auth, ownBot, (req, res) => res.json(Leads.byBot(req.bot.id)));
 app.post("/api/leads/:id/handled", auth, (req, res) => { Leads.markHandled(req.params.id); res.json({ ok: true }); });
+
+
+// ─── Meta Embedded Signup config for SaaS onboarding ─────────────────────────
+app.get("/api/meta/app-config", auth, (_req, res) => {
+  res.json({
+    appId: META_APP_ID,
+    configId: META_CONFIG_ID,
+    apiVersion: META_API_VERSION,
+    redirectUri: `${PUBLIC_BASE_URL}/auth/facebook/callback`,
+    ready: Boolean(META_APP_ID && META_CONFIG_ID),
+  });
+});
+
+app.post("/api/bots/:botId/embedded-signup", auth, ownBot, async (req, res) => {
+  try {
+    const { code, phone_number_id, waba_id, business_id, signup_payload } = req.body || {};
+    if (!code) return res.status(400).json({ error: "Missing authorization code from Meta Embedded Signup." });
+    if (!META_APP_SECRET) return res.status(500).json({ error: "META_APP_SECRET is not set in Railway variables." });
+
+    const tokenParams = new URLSearchParams({
+      client_id: META_APP_ID,
+      client_secret: META_APP_SECRET,
+      code,
+    });
+    const tokenRes = await fetch(`https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?${tokenParams}`);
+    const tokenData = await tokenRes.json().catch(() => ({}));
+    if (!tokenRes.ok || !tokenData.access_token) {
+      const msg = tokenData?.error?.message || "Could not exchange Meta code for access token.";
+      return res.status(400).json({ error: msg });
+    }
+
+    const accessToken = tokenData.access_token;
+    let wabaId = waba_id || signup_payload?.data?.waba_id || signup_payload?.waba_id || "";
+    let phoneId = phone_number_id || signup_payload?.data?.phone_number_id || signup_payload?.phone_number_id || "";
+    const businessId = business_id || signup_payload?.data?.business_id || signup_payload?.business_id || "";
+
+    let subscribeStatus = "not_attempted";
+    if (wabaId) {
+      try {
+        await graphFetch(`/${wabaId}/subscribed_apps`, { method: "POST", accessToken });
+        subscribeStatus = "subscribed";
+      } catch (e) {
+        subscribeStatus = `subscribe_failed: ${e.message}`;
+        console.warn("WABA subscribe failed", e.message);
+      }
+    }
+
+    if (!phoneId && wabaId) {
+      try {
+        const phones = await graphFetch(`/${wabaId}/phone_numbers`, { accessToken });
+        phoneId = phones?.data?.[0]?.id || "";
+      } catch (e) {
+        console.warn("Could not fetch phone numbers", e.message);
+      }
+    }
+
+    const updated = Bots.update(req.bot.id, {
+      meta_phone_id: phoneId || req.bot.meta_phone_id,
+      meta_token: accessToken,
+      meta_verify_token: req.bot.meta_verify_token || DEFAULT_VERIFY_TOKEN,
+      meta_waba_id: wabaId,
+      meta_business_id: businessId,
+      meta_embedded_status: phoneId ? "connected" : "token_saved_no_phone_id",
+      meta_onboarded_at: new Date().toISOString(),
+      meta_subscribe_status: subscribeStatus,
+    });
+
+    res.json({
+      ok: true,
+      bot: updated,
+      phone_number_id: phoneId,
+      waba_id: wabaId,
+      business_id: businessId,
+      subscribeStatus,
+    });
+  } catch (e) {
+    console.error("embedded signup error", e);
+    res.status(500).json({ error: e.message || "Embedded signup failed." });
+  }
+});
 
 // ─── Test console: simulate a customer message (no WhatsApp needed) ────────────
 app.post("/api/bots/:botId/test", auth, ownBot, async (req, res) => {

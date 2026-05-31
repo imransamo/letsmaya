@@ -51,7 +51,13 @@ const Tenants = {
 };
 
 // ─── Bots ───────────────────────────────────────────────────────────────────
-const BOT_DEFAULTS = { greeting: "", language: "auto", manager_phone: "", meta_phone_id: "", meta_token: "", meta_verify_token: "", active: 1 };
+const BOT_DEFAULTS = {
+  greeting: "", language: "auto", manager_phone: "",
+  meta_phone_id: "", meta_token: "", meta_verify_token: "",
+  meta_waba_id: "", meta_business_id: "", meta_embedded_status: "manual",
+  meta_onboarded_at: "", meta_subscribe_status: "",
+  active: 1
+};
 const Bots = {
   create(data) {
     const b = { id: uid("bot_"), created_at: now(), ...BOT_DEFAULTS, ...data };
@@ -67,7 +73,11 @@ const Bots = {
   update(id, fields) {
     const b = Bots.byId(id);
     if (!b) return null;
-    const allowed = ["business_name","industry","system_prompt","greeting","language","manager_phone","meta_phone_id","meta_token","meta_verify_token","active"];
+    const allowed = [
+      "business_name","industry","system_prompt","greeting","language","manager_phone",
+      "meta_phone_id","meta_token","meta_verify_token","meta_waba_id","meta_business_id",
+      "meta_embedded_status","meta_onboarded_at","meta_subscribe_status","active"
+    ];
     for (const k of allowed) if (k in fields) b[k] = fields[k];
     save();
     return b;

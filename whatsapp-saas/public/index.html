@@ -165,7 +165,7 @@
       <div class="step"><h3>Create account</h3><p>Sign up free, no card needed.</p></div>
       <div class="step"><h3>Pick industry</h3><p>Restaurant, clinic, retail, real estate, services — we pre-build the agent.</p></div>
       <div class="step"><h3>Test it instantly</h3><p>Chat with your agent right in the dashboard before going live.</p></div>
-      <div class="step"><h3>Connect WhatsApp</h3><p>Paste your Meta number details and you're live.</p></div>
+      <div class="step"><h3>Connect WhatsApp</h3><p>Use guided WhatsApp Embedded Signup or paste Meta details manually.</p></div>
     </div>
   </div></section>
 
@@ -383,12 +383,24 @@ function tabSettings(){
       <button class="btn btn-ghost btn-sm" onclick="resetPrompt()">Reset to ${b.industry} template</button>
     </div>
     <hr style="border:none;border-top:1px solid var(--line);margin:24px 0">
-    <h3 style="font-family:Fraunces;font-size:20px;margin-bottom:6px">Connect WhatsApp (Meta Cloud API)</h3>
-    <p class="muted" style="margin-bottom:12px">Paste these from your Meta Developer app to go live. Leave blank to stay in test mode.</p>
-    <div class="field"><label>Phone Number ID</label><input id="f_pid" value="${b.meta_phone_id||''}"></div>
-    <div class="field"><label>Access Token</label><input id="f_tok" value="${b.meta_token||''}" type="password"></div>
-    <div class="field"><label>Webhook Verify Token (you choose this)</label><input id="f_vt" value="${b.meta_verify_token||''}" placeholder="my-secret-123"></div>
-    <button class="btn btn-amber btn-sm" onclick="saveMeta()">Save connection</button>
+    <h3 style="font-family:Fraunces;font-size:20px;margin-bottom:6px">Connect WhatsApp</h3>
+    <p class="muted" style="margin-bottom:12px">For SaaS onboarding, use the guided Meta Embedded Signup button. Manual fields are still available as backup.</p>
+    <div class="card" style="box-shadow:none;margin-bottom:16px;background:var(--paper)">
+      <h3 style="font-family:Fraunces;font-size:18px;margin-bottom:8px">Guided setup for clients</h3>
+      <p class="muted" style="margin-bottom:12px">This opens Meta's official flow so a business can connect its own WhatsApp Business account to LetsMaya.</p>
+      <button class="btn btn-teal btn-sm" onclick="connectWhatsAppEmbedded()">Connect WhatsApp with Meta</button>
+      <p id="waStatus" class="muted" style="margin-top:10px;font-size:13px">
+        Status: ${b.meta_embedded_status||'not connected'} ${b.meta_phone_id?`· Phone ID: ${esc(b.meta_phone_id)}`:''}
+      </p>
+    </div>
+    <details>
+      <summary style="cursor:pointer;font-weight:700;margin-bottom:12px">Manual Meta Cloud API settings</summary>
+      <p class="muted" style="margin-bottom:12px">Use this only if a customer gives you Meta details manually.</p>
+      <div class="field"><label>Phone Number ID</label><input id="f_pid" value="${b.meta_phone_id||''}"></div>
+      <div class="field"><label>Access Token</label><input id="f_tok" value="${b.meta_token||''}" type="password"></div>
+      <div class="field"><label>Webhook Verify Token</label><input id="f_vt" value="${b.meta_verify_token||''}" placeholder="letsmaya_verify_123"></div>
+      <button class="btn btn-amber btn-sm" onclick="saveMeta()">Save manual connection</button>
+    </details>
     <p class="muted" style="margin-top:12px;font-size:13px">Webhook URL: <code>${location.origin}/webhook</code></p>`;
 }
 async function saveBot(id){
@@ -397,6 +409,75 @@ async function saveBot(id){
 }
 async function savePrompt(){ await put({system_prompt:$('#f_prompt').value}); alert('Saved'); }
 async function resetPrompt(){ await fetch(`/api/bots/${STATE.bot.id}/reset-prompt`,{method:'POST'}); await selectBot(STATE.bot.id); }
+
+async function getMetaConfig(){
+  if(STATE.metaConfig) return STATE.metaConfig;
+  const r = await fetch('/api/meta/app-config');
+  STATE.metaConfig = await r.json();
+  return STATE.metaConfig;
+}
+function loadFacebookSdk(appId, apiVersion){
+  return new Promise((resolve,reject)=>{
+    if(window.FB) return resolve(window.FB);
+    window.fbAsyncInit = function(){
+      FB.init({ appId, cookie:true, xfbml:true, version: apiVersion || 'v21.0' });
+      resolve(window.FB);
+    };
+    const s=document.createElement('script');
+    s.src='https://connect.facebook.net/en_US/sdk.js';
+    s.async=true; s.defer=true; s.crossOrigin='anonymous';
+    s.onerror=()=>reject(new Error('Facebook SDK failed to load'));
+    document.body.appendChild(s);
+  });
+}
+window.addEventListener('message', (event)=>{
+  if(!['https://www.facebook.com','https://web.facebook.com'].includes(event.origin)) return;
+  try{
+    const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+    if(data && data.type === 'WA_EMBEDDED_SIGNUP'){
+      STATE.waSignupPayload = data;
+      const el = document.getElementById('waStatus');
+      if(el && data.event) el.textContent = 'Meta signup event: ' + data.event;
+    }
+  }catch(_e){}
+});
+async function connectWhatsAppEmbedded(){
+  const cfg = await getMetaConfig();
+  if(!cfg.ready) return alert('Meta app config is missing on the server. Add META_APP_ID and META_CONFIG_ID in Railway.');
+  const status = document.getElementById('waStatus');
+  if(status) status.textContent = 'Opening Meta Embedded Signup...';
+  await loadFacebookSdk(cfg.appId, cfg.apiVersion);
+  FB.login(async function(response){
+    try{
+      if(!response.authResponse || !response.authResponse.code){
+        if(status) status.textContent = 'WhatsApp connection cancelled.';
+        return alert('Meta signup was cancelled or did not return a code.');
+      }
+      if(status) status.textContent = 'Saving WhatsApp connection...';
+      const payload = { code: response.authResponse.code, signup_payload: STATE.waSignupPayload || {} };
+      const d = payload.signup_payload.data || {};
+      if(d.phone_number_id) payload.phone_number_id = d.phone_number_id;
+      if(d.waba_id) payload.waba_id = d.waba_id;
+      if(d.business_id) payload.business_id = d.business_id;
+      const r = await fetch(`/api/bots/${STATE.bot.id}/embedded-signup`,{
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      });
+      const result = await r.json();
+      if(!r.ok) throw new Error(result.error || 'Could not save WhatsApp connection');
+      alert('WhatsApp connected to this agent.');
+      await selectBot(STATE.bot.id);
+    }catch(e){
+      if(status) status.textContent = 'Error: ' + e.message;
+      alert(e.message);
+    }
+  }, {
+    config_id: cfg.configId,
+    response_type: 'code',
+    override_default_response_type: true,
+    extras: { setup: {}, featureType: 'only_waba_sharing', sessionInfoVersion: 3 }
+  });
+}
+
 async function saveMeta(){ await put({meta_phone_id:$('#f_pid').value.trim(),meta_token:$('#f_tok').value.trim(),meta_verify_token:$('#f_vt').value.trim()}); alert('Connection saved'); }
 async function put(fields){ STATE.bot = await (await fetch('/api/bots/'+STATE.bot.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)})).json(); }
 

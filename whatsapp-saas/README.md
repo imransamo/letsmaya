@@ -99,3 +99,18 @@ scale past ~20–30 clients, plan for:
 
 In PKR terms, charging clients PKR 8,000–20,000/mo per agent with Haiku + Cloud
 API direct keeps healthy margins. Gulf clients can be billed in USD/AED.
+
+
+## LetsMaya Embedded Signup Setup
+
+Railway variables required for SaaS WhatsApp onboarding:
+
+- PUBLIC_BASE_URL=https://letsmaya.com
+- CONTACT_EMAIL=your-support-email
+- GLOBAL_VERIFY_TOKEN=letsmaya_verify_123
+- META_API_VERSION=v21.0
+- META_APP_ID=1540959850756893
+- META_CONFIG_ID=2301673067305775
+- META_APP_SECRET=your_meta_app_secret
+
+The dashboard Settings tab includes a guided "Connect WhatsApp with Meta" button using Facebook Login for Business / WhatsApp Embedded Signup.
