@@ -4,11 +4,13 @@
 // Handles one incoming WhatsApp message end to end:
 //   1. Find which tenant's bot owns the receiving number
 //   2. Load that conversation's history
-//   3. Ask Claude (with the tenant's own system prompt)
+//   3. Ask the AI (DeepSeek primary, Claude fallback) with the tenant's own
+//      system prompt
 //   4. Detect & log any lead, alert the manager
 //   5. Send the reply back via Meta Cloud API
 //
-// Works in DEMO MODE with no Meta/Anthropic keys so you can show it off offline.
+// Works in DEMO MODE with no Meta/DeepSeek/Anthropic keys so you can show it
+// off offline.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const axios = require("axios");
@@ -20,7 +22,29 @@ const META_API_VERSION = process.env.META_API_VERSION || "v21.0";
 const GLOBAL_ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
 const MODEL = process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001";
 
+const GLOBAL_DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || "";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+
 const anthropic = GLOBAL_ANTHROPIC_KEY ? new Anthropic({ apiKey: GLOBAL_ANTHROPIC_KEY }) : null;
+
+// ─── Ask DeepSeek for a reply (OpenAI-compatible chat completions) ────────────
+async function tryDeepSeek(bot, history) {
+  if (!GLOBAL_DEEPSEEK_KEY) return null;
+  const res = await axios.post(
+    DEEPSEEK_URL,
+    {
+      model: DEEPSEEK_MODEL,
+      max_tokens: 600,
+      messages: [
+        { role: "system", content: bot.system_prompt },
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+      ],
+    },
+    { headers: { Authorization: `Bearer ${GLOBAL_DEEPSEEK_KEY}`, "Content-Type": "application/json" }, timeout: 30000 }
+  );
+  return res.data?.choices?.[0]?.message?.content?.trim() || null;
+}
 
 // ─── Send a text message back to the customer via Meta Cloud API ──────────────
 async function sendWhatsApp(bot, toPhone, text) {
@@ -38,25 +62,38 @@ async function sendWhatsApp(bot, toPhone, text) {
   return res.data;
 }
 
-// ─── Ask Claude for a reply, scoped to this bot's prompt + this conversation ──
+// ─── Ask the AI for a reply: DeepSeek primary, Claude fallback ────────────────
 async function think(bot, history) {
-  if (!anthropic) {
+  if (!GLOBAL_DEEPSEEK_KEY && !anthropic) {
     // DEMO MODE — canned but contextual so demos work with zero keys.
     const last = history[history.length - 1]?.content?.toLowerCase() || "";
     if (/price|rate|kitna|cost|how much/.test(last))
       return `Thanks for asking! I'll get you the exact pricing. Could you tell me which item or service you're interested in?`;
     if (/book|appointment|order|chahiye|want/.test(last))
       return `Happy to help with that. Can I get your name and preferred time?\n[[LEAD type=inquiry detail=demo interest captured]]`;
-    return `Hi! This is the ${bot.business_name} assistant. How can I help you today? (Demo mode — connect an Anthropic key for full AI replies.)`;
+    return `Hi! This is the ${bot.business_name} assistant. How can I help you today? (Demo mode — connect a DeepSeek or Anthropic key for full AI replies.)`;
   }
 
-  const msg = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 600,
-    system: [{ type: "text", text: bot.system_prompt, cache_control: { type: "ephemeral" } }],
-    messages: history.map((m) => ({ role: m.role, content: m.content })),
-  });
-  return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  if (GLOBAL_DEEPSEEK_KEY) {
+    try {
+      const reply = await tryDeepSeek(bot, history);
+      if (reply) return reply;
+    } catch (e) {
+      console.error("DeepSeek error, falling back to Claude:", e.response?.data || e.message);
+    }
+  }
+
+  if (anthropic) {
+    const msg = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 600,
+      system: [{ type: "text", text: bot.system_prompt, cache_control: { type: "ephemeral" } }],
+      messages: history.map((m) => ({ role: m.role, content: m.content })),
+    });
+    return msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  }
+
+  throw new Error("DeepSeek failed and no Anthropic fallback is configured.");
 }
 
 // ─── Alert the business owner when a real lead comes in ───────────────────────
